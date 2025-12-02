@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Patient Dashboard - MediConnect{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Welcome, {{ patient.user.full_name }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('mediconnect_patient.profile') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-person-circle"></i> My Profile</a>
+            <a href="{{ url_for('mediconnect_patient.book_appointment') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-calendar2-heart-fill"></i> Book Appointment</a>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="mb-3">
+    <div class="row g-3">
+        <div class="col-sm-6">
+            <input type="text" name="search" id="search" class="form-control" placeholder="Search appointments" value="{{ request.args.get('search', '') }}">
+        </div>
+        <div class="col-sm-4">
+            <select name="search_by" id="search_by" class="form-select">
+                <option value="doctor" {% if request.args.get('search_by') == 'doctor' %}selected{% endif %}>Doctor</option>
+                <option value="date" {% if request.args.get('search_by') == 'date' %}selected{% endif %}>Date</option>
+                <option value="status" {% if request.args.get('search_by') == 'status' %}selected{% endif %}>Status</option>
+            </select>
+        </div>
+        <div class="col-sm-2">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Search</button>
+        </div>
+    </div>
+</form>
+
+<h3>Upcoming Appointments</h3>
+<div class="table-responsive shadow-sm">
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Doctor</th>
+                <th>Status</th>
+                <th>Created at</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in upcoming %}
+            <tr>
+                <td>{{ appt.slot.date if appt.slot else 'N/A' }}</td>
+                <td>{{ appt.slot.time.strftime('%I:%M %p') if appt.slot else 'N/A' }}</td>
+                <td>
+                    {% if appt.treatment and appt.treatment.diagnosed_by %}
+                        {{ appt.treatment.diagnosed_by }}
+                    {% elif appt.slot and appt.slot.doctor %}
+                        {{ appt.slot.doctor.user.full_name }}
+                    {% elif appt.doctor %}
+                        {{ appt.doctor.user.full_name }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    {% if appt.doctor and appt.doctor.user.status != "active" %}
+                        <span class="badge bg-warning text-dark">Doctor not available</span>
+                    {% else %}
+                        <span class="badge bg-{{ 'danger' if appt.status == 'Cancelled' else 'success' }}">{{ appt.status }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ appt.created_at.date() }} {{ appt.created_at.strftime('%I:%M %p') if appt.created_at else 'N/A' }}</td>
+                <td>
+                    {% if appt.status == 'Booked' %}
+                        <a href="{{ url_for('mediconnect_patient.reschedule_appointment', appointment_id=appt.appointment_id) }}" class="btn btn-sm btn-warning"><i class="bi bi-pencil-square"></i> Reschedule</a>
+                        <form action="{{ url_for('mediconnect_patient.cancel_appointment', appointment_id=appt.appointment_id) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancelling an appointment is irreversible. Are you sure?');">
+                            <input type="hidden" name="status" value="Cancelled">
+                            <button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash3-fill"></i> Cancel</button>
+                        </form>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<hr>
+<div class="row">
+    <div class="col-lg-6 my-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-center">My Past Appointment Distribution</h5>
+                <div style="height: 300px;" class="d-flex justify-content-center align-items-center">
+                    <canvas id="treatmentHistoryChart"></canvas>
+                    <p id="noHistoryText" class="text-center text-muted" style="display: none;">No past appointment history to display.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 my-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-center">Appointments Over Time</h5>
+                <div style="height: 300px;" class="d-flex justify-content-center align-items-center">
+                    <canvas id="appointmentsOverTimeChart"></canvas>
+                    <p id="noTimelineText" class="text-center text-muted" style="display: none;">No appointment data available to show a timeline.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<hr>
+
+<h3 class="mt-4">Past Appointments</h3>
+<div class="table-responsive shadow-sm">
+    <table class="table table-striped table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Doctor</th>
+                <th>Status</th>
+                <th>Created at</th>
+                <th>Diagnosis</th>
+                <th>Prescription</th>
+                <th>Notes</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for appt in past %}
+            <tr>
+                <td>{{ appt.slot.date if appt.slot else 'N/A' }}</td>
+                <td>{{ appt.slot.time.strftime('%I:%M %p') if appt.slot else 'N/A' }}</td>
+                <td>
+                    {% if appt.treatment and appt.treatment.diagnosed_by %}
+                        {{ appt.treatment.diagnosed_by }}
+                    {% elif appt.slot and appt.slot.doctor %}
+                        {{ appt.slot.doctor.user.full_name }}
+                    {% elif appt.doctor %}
+                        {{ appt.doctor.user.full_name }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td><span class="badge bg-{{ 'danger' if appt.status == 'Cancelled' else 'success' }}">{{ appt.status }}</span></td>
+                <td>{{ appt.created_at.date() }} {{ appt.created_at.strftime('%I:%M %p') if appt.created_at else 'N/A' }}</td>
+                <td>{{ appt.treatment.diagnosis if appt.treatment else 'N/A' }}</td>
+                <td>{{ appt.treatment.prescription if appt.treatment else 'N/A' }}</td>
+                <td>{{ appt.treatment.notes if appt.treatment else 'N/A' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<hr>
+<div class="text-center mt-4">
+    <a href="{{ url_for('mediconnect_patient.logout') }}" class="btn btn-outline-danger btn-lg"><i class="bi bi-box-arrow-right"></i> Logout</a>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const completed = {{ chart_completed or 0 }};
+        const cancelled = {{ chart_cancelled or 0 }};
+
+        if (completed > 0 || cancelled > 0) {
+            const ctx = document.getElementById('treatmentHistoryChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Completed', 'Cancelled'],
+                    datasets: [{
+                        label: 'Appointments',
+                        data: [completed, cancelled],
+                        backgroundColor: [
+                            'rgba(71, 195, 62, 0.7)',
+                            'rgba(248, 80, 62, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('treatmentHistoryChart').style.display = 'none';
+            document.getElementById('noHistoryText').style.display = 'block';
+        }
+
+
+        const line_labels = {{ chart_dates | tojson }};
+        const line_data = {{ chart_counts | tojson }};
+
+        if (line_labels.length > 0) {
+            const ctxLine = document.getElementById('appointmentsOverTimeChart').getContext('2d');
+            new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: line_labels,
+                    datasets: [{
+                        label: 'Past Appointments',
+                        data: line_data,
+                        fill: false,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1 
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('appointmentsOverTimeChart').style.display = 'none';
+            document.getElementById('noTimelineText').style.display = 'block';
+        }
+    });
+</script>
+
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Department{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center">Edit Department</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Department Name:</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ department.name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description:</label>
+                        <textarea class="form-control" id="description" name="description" rows="3">{{ department.description }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Department</button>
+                </form>
+                <div class="mt-3 text-center">
+                    <a href="{{ url_for('mediconnect_admin.view_departments') }}"><i class="bi bi-arrow-left"></i> Back to Departments</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

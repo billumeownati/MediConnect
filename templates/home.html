@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}MediConnect - Home{% endblock %}
+
+{% block content %}
+<div class="text-center mt-5">
+  <h1 class="fw-bold text-primary mb-3">Welcome to MediConnect</h1>
+  <p class="lead text-secondary mb-4">
+    Your trusted hospital management platform - connecting patients and doctors seamlessly.
+  </p>
+
+  <div id="homeCarousel" class="carousel slide mb-4" data-bs-ride="carousel" data-bs-interval="3000">
+    <div class="carousel-inner">
+      <div class="carousel-item active"><p class="text-success fw-semibold mb-0"><i class="bi bi-calendar2-week-fill"></i> Book appointments online anytime</p></div>
+      <div class="carousel-item"><p class="text-success fw-semibold mb-0"><i class="bi bi-eye-fill"></i> View your medical history instantly</p></div>
+      <div class="carousel-item"><p class="text-success fw-semibold mb-0"><i class="bi bi-clock-fill"></i> Manage schedules efficiently</p></div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#homeCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon btn btn-secondary" aria-hidden="true"></span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#homeCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon btn btn-secondary"></span>
+    </button>
+  </div>
+
+  <div class="d-flex justify-content-center gap-3 mt-4 mb-5">
+    {% if session.get('user_id') or session.get('admin_id') %}
+      {% if session.get('admin_id') %}
+        <a class="btn btn-primary btn-lg px-4" href="{{ url_for('mediconnect_admin.dashboard') }}"><i class="bi bi-speedometer2"></i> Go to Dashboard</a>
+      {% elif session.role == "doctor" %}
+        <a class="btn btn-primary btn-lg px-4" href="{{ url_for('mediconnect_doctor.dashboard') }}"><i class="bi bi-speedometer2"></i> Go to Dashboard</a>
+      {% elif session.role == "patient" %}
+        <a class="btn btn-primary btn-lg px-4" href="{{ url_for('mediconnect_patient.dashboard') }}"><i class="bi bi-speedometer2"></i> Go to Dashboard</a>
+      {% else %}
+        <span class="nav-link fw-semibold text-danger">Invalid User!</span>
+      {% endif %}
+    {% else %}
+      <a href="{{ url_for('mediconnect.login') }}" class="btn btn-primary btn-lg px-4">Login</a>
+      <a href="{{ url_for('mediconnect.register') }}" class="btn btn-outline-primary btn-lg px-4">Register as Patient</a>
+    {% endif %}
+  </div>
+
+  <hr class="my-5">
+
+  <div class="container mt-4">
+    <h2 class="text-primary mb-4"><i class="bi bi-search-heart"></i> Find a Doctor</h2>
+
+    <form method="get" action="{{ url_for('mediconnect.home') }}" class="mb-4">
+      <div class="row g-3 justify-content-center">
+        <div class="col-sm-6 col-md-4">
+          <input type="text" name="search" class="form-control" placeholder="Search Doctor" value="{{ search_term }}">
+        </div>
+        <div class="col-sm-3 col-md-2">
+          <select name="search_by" class="form-select">
+            <option value="name" {% if search_by == 'name' %}selected{% endif %}>Name</option>
+            <option value="department" {% if search_by == 'department' %}selected{% endif %}>Department</option>
+          </select>
+        </div>
+        <div class="col-sm-2">
+          <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i> Search</button>
+        </div>
+        <div class="col-sm-2">
+          <a href="{{ url_for('mediconnect.home') }}" class="btn btn-outline-secondary w-100">
+            <i class="bi bi-x-octagon"></i> Clear Search
+          </a>
+        </div>
+      </div>
+    </form>
+    
+    {% if not search_term and not show_all %}
+      <p class="text-muted">Search for a doctor by name or department.</p>
+      <a href="{{ url_for('mediconnect.home', show_all='true') }}" class="btn btn-secondary ms-2">Show All Doctors</a>
+
+    {% elif (search_term and not doctors) %}
+      <p class="text-danger fw-semibold">No doctors found matching your search.</p>
+
+    {% elif doctors %}
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered">
+          <thead class="table-dark">
+            <tr>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Qualification</th>
+              <th>Experience (Years)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for doctor in doctors %}
+            <tr>
+              <td>{{ doctor.user.full_name }}</td>
+              <td>{{ doctor.department.name if doctor.department else 'N/A' }}</td>
+              <td>{{ doctor.qualification }}</td>
+              <td>{{ doctor.experience_years }}</td>
+              <td>
+                {% if session.get('user_id') or session.get('admin_id') %}
+                  {% if session.role == "patient" %}
+                    <a href="{{ url_for('mediconnect_patient.book_appointment', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-sm">
+                      <i class="bi bi-calendar2-heart-fill"></i> Book Appointment
+                    </a>
+                  {% else %}
+                    <a href="#" class="btn btn-outline-secondary btn-sm disabled">
+                      <i class="bi bi-exclamation-triangle"></i> Only patients can book
+                    </a>
+                  {% endif %}
+                {% else %}
+                  <a href="{{ url_for('mediconnect.login') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-box-arrow-in-right"></i> Login to Book
+                  </a>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

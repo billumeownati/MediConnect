@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Doctor{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center">Edit Doctor</h2>
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="full_name" class="form-label">Full Name:</label>
+                            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ doctor.user.full_name }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{ doctor.user.email }}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">Password:</label>
+                            <input type="text" class="form-control" id="password" name="password" value="{{ doctor.user.password }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="phone_no" class="form-label">Phone Number:</label>
+                            <input type="tel" class="form-control" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" value="{{ doctor.user.phone_no }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department_id" class="form-label">Department:</label>
+                        <select class="form-select" name="department_id" id="department_id">
+                            <option value="">-- Select Department --</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.department_id }}" {% if doctor.department_id == dept.department_id %}selected{% endif %}>
+                                    {{ dept.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="qualification" class="form-label">Qualification:</label>
+                            <input type="text" class="form-control" id="qualification" name="qualification" value="{{ doctor.qualification }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="experience" class="form-label">Experience (years):</label>
+                            <input type="number" class="form-control" id="experience" name="experience" value="{{ doctor.experience_years }}">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Update Doctor</button>
+                </form>
+                <div class="mt-3 text-center">
+                    <a href="{{ url_for('mediconnect_admin.view_doctors') }}"><i class="bi bi-arrow-left"></i> Back to Doctors</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Reschedule Appointment - {{ appointment.doctor.user.full_name}}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center">Reschedule Appointment</h2>
+                <div class="alert alert-info">
+                    <strong>Current Appointment:</strong><br>
+                    Doctor: {{ appointment.doctor.user.full_name if appointment.doctor and appointment.doctor.user else 'N/A' }}<br>
+                    Date: {{ appointment.slot.date if appointment.slot else 'N/A' }}<br>
+                    Time: {{ appointment.slot.time.strftime('%I:%M %p') if appointment.slot else 'N/A' }}
+                </div>
+                <hr>
+
+                {% if available_slots %}
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="slot_id" class="form-label"><strong>Select a New Slot:</strong></label>
+                            <select name="slot_id" id="slot_id" class="form-select" required>
+                                {% for slot in available_slots %}
+                                    <option value="{{ slot.slot_id }}">
+                                        {{ slot.date }} - {{ slot.time.strftime('%I:%M %p') }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Reschedule</button>
+                    </form>
+                {% else %}
+                    <p class="text-danger">No available slots for this doctor.</p>
+                {% endif %}
+                <div class="mt-3 text-center">
+                    <a href="{{ url_for('mediconnect_patient.dashboard') }}"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

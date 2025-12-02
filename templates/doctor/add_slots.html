@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Add Slot - {{ doctor.user.full_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center">Add a Slot</h2>
+                <form method="POST" action="{{ url_for('mediconnect_doctor.add_slot') }}">
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Date:</label>
+                        <input type="date" class="form-control" id="date" name="date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="time" class="form-label">Time:</label>
+                        <input type="time" class="form-control" id="time" name="time" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-plus-circle"></i> Add Slot</button>
+                </form>
+                <div class="mt-3 text-center">
+                    <a href="{{ url_for('mediconnect_doctor.slots') }}"><i class="bi bi-arrow-left"></i> Back to Slots</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

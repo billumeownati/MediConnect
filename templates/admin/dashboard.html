@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - MediConnect{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<div class="row">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Departments</h5>
+                <p class="card-text fs-4">{{ total_departments }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Doctors</h5>
+                <p class="card-text fs-4">{{ total_doctors }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Patients</h5>
+                <p class="card-text fs-4">{{ total_patients }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card text-center h-100 shadow-sm">
+            <div class="card-body">
+                <h5 class="card-title">Total Appointments</h5>
+                <p class="card-text fs-4">{{ total_appointments }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-center">System Overview</h5>
+                <div style="height: 250px;" class="d-flex justify-content-center align-items-center">
+                    <canvas id="systemOverviewChart"></canvas>
+                    <p id="noOverviewText" class="text-center text-muted" style="display: none;">No system data to display.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-center">Doctors per Department</h5>
+                <div style="height: 300px;" class="d-flex justify-content-center align-items-center">
+                    <canvas id="doctorsPerDepartmentChart"></canvas>
+                    <p id="noDeptText" class="text-center text-muted" style="display: none;">No department data to display.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h5 class="card-title text-center">Appointment Status Distribution</h5>
+                <h6 class="card-subtitle mb-2 text-muted text-center">
+                    Total Appointments: {{ total_appointments }}
+                </h6>
+                <div style="height: 300px;" class="d-flex justify-content-center align-items-center">
+                    <canvas id="appointmentStatusPieChart"></canvas>
+                    <p id="noApptStatusText" class="text-center text-muted" style="display: none;">No appointment data to display.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <h3><i class="bi bi-hospital-fill"></i> Departments</h3>
+        <ul class="list-group shadow-sm">
+            <li class="list-group-item"><a href="{{ url_for('mediconnect_admin.add_department') }}" class="text-decoration-none"><i class="bi bi-building-fill-add"></i> Add Department</a></li>
+            <li class="list-group-item"><a href="{{ url_for('mediconnect_admin.view_departments') }}" class="text-decoration-none"><i class="bi bi-eye-fill"></i> View Departments</a></li>
+        </ul>
+    </div>
+    <div class="col-md-4 mb-4">
+        <h3><i class="bi bi-people-fill"></i> Doctors</h3>
+        <ul class="list-group shadow-sm">
+            <li class="list-group-item"><a href="{{ url_for('mediconnect_admin.add_doctor') }}" class="text-decoration-none"><i class="bi bi-person-fill-add"></i> Add Doctor</a></li>
+            <li class="list-group-item"><a href="{{ url_for('mediconnect_admin.view_doctors') }}" class="text-decoration-none"><i class="bi bi-eye-fill"></i> View Doctors</a></li>
+        </ul>
+    </div>
+    <div class="col-md-4 mb-4">
+        <h3><i class="bi bi-person-heart"></i> Patients</h3>
+        <ul class="list-group shadow-sm">
+            <li class="list-group-item"><a href="{{ url_for('mediconnect_admin.view_patients') }}" class="text-decoration-none"><i class="bi bi-eye-fill"></i> View Patients</a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <h3><i class="bi bi-calendar2-week-fill"></i> Appointments</h3>
+        <ul class="list-group shadow-sm">
+            <li class="list-group-item"><a href="{{ url_for('mediconnect_admin.view_appointments') }}" class="text-decoration-none"><i class="bi bi-eye-fill"></i> View Appointments</a></li>
+        </ul>
+    </div>
+</div>
+
+<hr>
+
+<div class="text-center mt-4">
+    <a href="{{ url_for('mediconnect_admin.logout') }}" class="btn btn-outline-danger btn-lg"><i class="bi bi-box-arrow-right"></i> Logout</a>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const overviewData1 = {{ chart_active_patients or 0 }};
+        const overviewData2 = {{ chart_active_doctors or 0 }};
+        
+        if (overviewData1 > 0 || overviewData2 > 0) {
+            const overviewCtx = document.getElementById('systemOverviewChart').getContext('2d');
+            new Chart(overviewCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Active Patients', 'Active Doctors'],
+                    datasets: [{
+                        label: 'Count',
+                        data: [ overviewData1, overviewData2 ],
+                        backgroundColor: [
+                            'rgba(50, 159, 91, 0.7)',
+                            'rgba(226, 109, 90, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1 
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('systemOverviewChart').style.display = 'none';
+            document.getElementById('noOverviewText').style.display = 'block';
+        }
+
+
+        const deptLabels = {{ chart_dept_labels | tojson }};
+        const deptData = {{ chart_dept_counts | tojson }};
+        
+        if (deptLabels.length > 0) {
+            const deptCtx = document.getElementById('doctorsPerDepartmentChart').getContext('2d');
+            new Chart(deptCtx, {
+                type: 'bar',
+                data: {
+                    labels: deptLabels, 
+                    datasets: [{
+                        label: 'Number of Doctors',
+                        data: deptData,
+                        backgroundColor: 'rgba(104, 195, 212, 0.7)',
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1 
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('doctorsPerDepartmentChart').style.display = 'none';
+            document.getElementById('noDeptText').style.display = 'block';
+        }
+
+
+        const apptBooked = {{ chart_booked or 0 }};
+        const apptCompleted = {{ chart_completed or 0 }};
+        const apptCancelled = {{ chart_cancelled or 0 }};
+
+        if (apptBooked > 0 || apptCompleted > 0 || apptCancelled > 0) {
+            const apptCtx = document.getElementById('appointmentStatusPieChart').getContext('2d');
+            new Chart(apptCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Booked', 'Completed', 'Cancelled'],
+                    datasets: [{
+                        label: 'Appointments',
+                        data: [ apptBooked, apptCompleted, apptCancelled ],
+                        backgroundColor: [
+                            'rgba(113, 161, 246, 0.7)',
+                            'rgba(71, 195, 62, 0.7)',
+                            'rgba(248, 80, 62, 0.7)'
+                        ]
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('appointmentStatusPieChart').style.display = 'none';
+            document.getElementById('noApptStatusText').style.display = 'block';
+        }
+    });
+</script>
+
+{% endblock %}

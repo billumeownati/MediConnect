@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Clone Slots - {{ doctor.user.full_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center">Clone Slots for Dr. {{ doctor.user.full_name }}</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="source_date" class="form-label">Date to clone from:</label>
+                        <input type="date" class="form-control" id="source_date" name="source_date" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="start_date" class="form-label">Start Date:</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="end_date" class="form-label">End Date:</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-copy"></i> Clone Slots</button>
+                </form>
+                <div class="mt-3 text-center">
+                    <a href="{{ url_for('mediconnect_doctor.slots') }}"><i class="bi bi-arrow-left"></i> Back to Slots</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
