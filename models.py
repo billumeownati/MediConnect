@@ -1,20 +1,22 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, UTC
+from flask_mail import Mail
 
 db = SQLAlchemy()
+mail = Mail()
 
 class Admin(db.Model):
     __tablename__ = 'admin'
     admin_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(50), nullable=False)
-    password = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
 
 class User(db.Model):
     __tablename__ = 'users'
     user_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     full_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(50), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(10), nullable=False)
     phone_no = db.Column(db.String(10), nullable=False)
     status = db.Column(db.String(20), nullable=False, default='active')
@@ -91,3 +93,12 @@ class Treatment(db.Model):
     notes = db.Column(db.String(500))
 
     appointment = db.relationship('Appointment', back_populates='treatment')
+
+class PasswordResetOTP(db.Model):
+    __tablename__ = "password_reset_otp"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.user_id"))
+    otp = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+

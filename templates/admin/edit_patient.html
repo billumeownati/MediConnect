@@ -22,7 +22,8 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="password" class="form-label">Password:</label>
-                            <input type="text" class="form-control" id="password" name="password" value="{{ patient.user.password }}" required>
+                            <input type="password" class="form-control" id="password" name="password">
+                            <small class="form-text text-body-secondary">Leave blank to keep current password. Use a strong password.</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="phone_no" class="form-label">Phone Number:</label>

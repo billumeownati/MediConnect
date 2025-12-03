@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models import db, User, Doctor, Patient, Appointment, Department, Slot, Treatment
+from models import db, Admin, User, Doctor, Patient, Appointment, Department, Slot, Treatment
 from datetime import datetime
 from sqlalchemy import or_
+from werkzeug.security import generate_password_hash
+from email_utils import send_doctor_credentials_email
 
 admin_bp = Blueprint("mediconnect_admin", __name__, url_prefix="/admin")
 
@@ -53,6 +55,37 @@ def dashboard():
     )
 
 
+@admin_bp.route("/profile", methods=["GET", "POST"])
+def profile():
+    admin_id = session.get("admin_id")
+    if not admin_id:
+        flash("Please log in first.", "error")
+        return redirect(url_for("mediconnect.login"))
+
+    admin = Admin.query.get(admin_id)
+    if not admin:
+        flash("Admin profile not found.", "error")
+        return redirect(url_for("mediconnect_admin.dashboard"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
+
+        if Admin.query.filter(Admin.email == email, Admin.admin_id != admin_id).first():
+            flash("Email already exists for another Admin.", "error")
+            return redirect(url_for("mediconnect_admin.profile"))
+        
+        if email:
+            admin.email = email
+        if password:
+            admin.password = generate_password_hash(password)
+
+        db.session.commit()
+        flash("Admin profile updated successfully.", "success")
+        return redirect(url_for("mediconnect_admin.dashboard"))
+    return render_template("admin/profile.html", admin=admin)
+
+
 @admin_bp.route("/add-doctor", methods=["GET", "POST"])
 def add_doctor():
     admin_id = session.get("admin_id")
@@ -83,7 +116,7 @@ def add_doctor():
             new_user = User(
                 full_name=full_name,
                 email=email,
-                password=password,
+                password=generate_password_hash(password),
                 role="doctor",
                 phone_no=phone_no,
                 status="active"
@@ -99,6 +132,8 @@ def add_doctor():
             )
             db.session.add(new_doctor)
             db.session.commit()
+
+            send_doctor_credentials_email(full_name, email, password)
             flash("Doctor added successfully.", "success")
             return redirect(url_for("mediconnect_admin.view_doctors"))
 
@@ -151,6 +186,7 @@ def edit_doctor(doctor_id):
     if request.method == "POST":
         full_name = request.form.get("full_name", "").strip()
         email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
         phone_no = request.form.get("phone_no", "").strip()
         qualification = request.form.get("qualification", "").strip()
         experience = request.form.get("experience", "0").strip()
@@ -167,6 +203,8 @@ def edit_doctor(doctor_id):
         try:
             doctor.user.full_name = full_name
             doctor.user.email = email
+            if password:
+                doctor.user.password = generate_password_hash(password)
             doctor.user.phone_no = phone_no
             doctor.qualification = qualification
             doctor.experience_years = int(experience) if experience.isdigit() else 0
@@ -253,6 +291,7 @@ def edit_patient(patient_id):
     if request.method == "POST":
         full_name = request.form.get("full_name", "").strip()
         email = request.form.get("email", "").strip()
+        password = request.form.get("password", "").strip()
         phone_no = request.form.get("phone_no", "").strip()
         dob = request.form.get("dob")
         gender = request.form.get("gender")
@@ -271,6 +310,8 @@ def edit_patient(patient_id):
         try:
             user.full_name = full_name
             user.email = email
+            if password:
+                user.password = generate_password_hash(password)
             user.phone_no = phone_no
 
             patient.dob = datetime.strptime(dob, "%Y-%m-%d").date()

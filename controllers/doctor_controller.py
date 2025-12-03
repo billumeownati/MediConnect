@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from models import db, Doctor, Patient, User, Appointment, Slot, Treatment
 from datetime import datetime, timedelta
 from sqlalchemy import or_
+from werkzeug.security import generate_password_hash
+from email_utils import send_appointment_status_email
 
 doctor_bp = Blueprint("mediconnect_doctor", __name__, url_prefix="/doctor")
 
@@ -106,7 +108,8 @@ def profile():
         if phone_no:
             doctor.user.phone_no = phone_no
         if password:
-            doctor.user.password = password
+            doctor.user.password = generate_password_hash(password)
+
 
         if qualification:
             doctor.qualification = qualification
@@ -140,6 +143,19 @@ def update_appointment(appointment_id):
         return redirect(url_for("mediconnect_doctor.dashboard"))
 
     appointment.status = new_status
+    
+    if new_status in ["Completed", "Cancelled"]:
+        appt_date = appointment.slot.date if appointment.slot else 'N/A'
+        appt_time = appointment.slot.time.strftime('%I:%M %p') if appointment.slot else 'N/A'
+        
+        send_appointment_status_email(
+            appointment.patient.user.email,
+            appointment.patient.user.full_name,
+            appointment.doctor.user.full_name,
+            appt_date,
+            appt_time,
+            new_status
+        )
 
     if new_status == "Cancelled" and appointment.slot:
         appointment.slot.status = "Available"
@@ -185,6 +201,19 @@ def treatment(appointment_id):
         treatment.notes = notes
         appointment.status = "Completed"
         db.session.commit()
+
+        appt_date = appointment.slot.date if appointment.slot else 'N/A'
+        appt_time = appointment.slot.time.strftime('%I:%M %p') if appointment.slot else 'N/A'
+        
+        send_appointment_status_email(
+            appointment.patient.user.email,
+            appointment.patient.user.full_name,
+            doctor.user.full_name,
+            appt_date,
+            appt_time,
+            "Completed"
+        )
+
         flash("Treatment saved successfully", "success")
         return redirect(url_for("mediconnect_doctor.dashboard"))
 

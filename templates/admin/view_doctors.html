@@ -31,7 +31,6 @@
                 <th>ID</th>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Password</th>
                 <th>Specialization</th>
                 <th>Experience Years</th>
                 <th>Status</th>
@@ -44,7 +43,6 @@
                 <td>{{ d.doctor_id }}</td>
                 <td>{{ d.user.full_name }}</td>
                 <td>{{ d.user.email }}</td>
-                <td>********</td>
                 <td>{{ d.department.name if d.department else '—' }}</td>
                 <td>{{ d.experience_years }}</td>
                 <td><span class="badge bg-{{ 'success' if d.user.status == 'active' else 'danger' }}">{{ d.user.status.upper() }}</span></td>

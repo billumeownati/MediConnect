@@ -2,6 +2,8 @@ from flask import Blueprint, render_template, request, session, redirect, url_fo
 from models import db, Patient, Appointment, Department, Slot, Doctor, Treatment, User
 from sqlalchemy import or_
 from datetime import datetime
+from werkzeug.security import generate_password_hash
+from email_utils import send_appointment_booking_email, send_appointment_cancellation_email, send_appointment_reschedule_email
 
 patient_bp = Blueprint("mediconnect_patient", __name__, url_prefix="/patient")
 
@@ -105,7 +107,8 @@ def profile():
         if phone_no:
             patient.user.phone_no = phone_no
         if password:
-            patient.user.password = password
+            patient.user.password = generate_password_hash(password)
+
 
         dob_str = request.form.get("dob") #updating patient info
         gender = request.form.get("gender")
@@ -209,6 +212,15 @@ def book_appointment():
         db.session.add(new_appointment)
         db.session.commit()
 
+        send_appointment_booking_email(
+            patient.user.email,
+            patient.user.full_name,
+            selected_doctor.user.full_name,
+            slot.date,
+            slot.time.strftime('%I:%M %p'),
+            selected_doctor.department.name if selected_doctor.department else 'N/A'
+        )
+
         flash("Appointment booked successfully!", "success")
         return redirect(url_for("mediconnect_patient.dashboard"))
 
@@ -237,6 +249,16 @@ def cancel_appointment(appointment_id):
         return redirect(url_for("mediconnect_patient.dashboard"))
 
     appointment.status = "Cancelled"
+
+    appt_date = appointment.slot.date if appointment.slot else 'Unknown Date'
+    appt_time = appointment.slot.time.strftime('%I:%M %p') if appointment.slot else 'Unknown Time'
+    
+    send_appointment_cancellation_email(
+        appointment.patient.user.email,
+        appointment.patient.user.full_name,
+        appt_date,
+        appt_time
+    )
 
     if appointment.slot:
         appointment.slot.status = "Available"
@@ -291,6 +313,14 @@ def reschedule_appointment(appointment_id):
         appointment.status = "Booked"
 
         db.session.commit()
+
+        send_appointment_reschedule_email(
+            appointment.patient.user.email,
+            appointment.patient.user.full_name,
+            appointment.doctor.user.full_name,
+            new_slot.date,
+            new_slot.time.strftime('%I:%M %p')
+        )
 
         flash("Appointment rescheduled successfully.", "success")
         return redirect(url_for("mediconnect_patient.dashboard"))

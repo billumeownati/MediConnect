@@ -3,7 +3,14 @@
 {% block title %}Admin Dashboard - MediConnect{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Admin Dashboard</h2>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Welcome, Admin</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('mediconnect_admin.profile') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-person-circle"></i> My Profile</a>
+        </div>
+    </div>
+</div>
 
 <div class="row">
     <div class="col-xl-3 col-md-6 mb-4">
