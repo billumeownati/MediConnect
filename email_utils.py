@@ -1,15 +1,30 @@
 from flask_mail import Message
 from models import mail
-from flask import url_for
+from flask import url_for, current_app
 from datetime import datetime
+from threading import Thread
+
+def send_async_email(app, msg):
+    """Background task to send email."""
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Error sending email: {e}")
 
 def send_email(subject, recipients, html_body):
-    """Generic helper to send emails with error handling."""
+    """Generic helper to send emails asynchronously."""
     try:
         msg = Message(subject, recipients=recipients, html=html_body)
-        mail.send(msg)
+        
+        # Get the actual application instance to pass to the thread
+        app = current_app._get_current_object()
+        
+        # Start a new thread to send the email
+        Thread(target=send_async_email, args=(app, msg)).start()
+        
     except Exception as e:
-        print(f"Error sending email: {e}")
+        print(f"Error initiating email: {e}")
 
 def get_common_style():
     """Returns the CSS style block used in all emails."""
