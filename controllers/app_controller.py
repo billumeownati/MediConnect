@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
 from email_utils import send_welcome_email, send_otp_email, send_verification_email
+import dns.resolver
+import re
 
 app_bp = Blueprint("mediconnect", __name__)
 
@@ -34,6 +36,24 @@ def home():
         show_all=show_all
     )
 
+def is_mx_record_valid(email):
+    """
+    Checks if the email address has the correct format and its domain has valid MX records.
+    """
+    # 1. Basic Syntax Check
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return False
+
+    try:
+        domain = email.split('@')[1]
+        
+        # 2. MX Record Lookup
+        answers = dns.resolver.resolve(domain, 'MX')
+        return len(answers) > 0
+        
+    except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, Exception):
+        # Domain exists but has no MX records, or domain doesn't exist
+        return False
 
 @app_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -55,6 +75,11 @@ def register():
                 return redirect(url_for("mediconnect.register"))
         except ValueError:
             flash("Invalid Date format.", "error")
+            return redirect(url_for("mediconnect.register"))
+
+        # --- MX Record Validation ---
+        if not is_mx_record_valid(email):
+            flash("The email address provided is invalid or cannot receive mail.", "error")
             return redirect(url_for("mediconnect.register"))
 
         if User.query.filter_by(email=email).first():
