@@ -3,41 +3,46 @@
 {% block title %}Patient Profile{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title text-center"><i class="bi bi-person-circle"></i> My Profile</h2>
+<div class="row justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-vcard-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+                <h3 class="card-title text-center fw-bold mb-4">My Profile</h3>
+
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="full_name" class="form-label">Name:</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ patient.user.full_name }}" required>
+                            <label for="full_name" class="form-label fw-semibold small text-uppercase text-secondary">Name</label>
+                            <input type="text" class="form-control form-control-lg" id="full_name" name="full_name" value="{{ patient.user.full_name }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email:</label>
-                            <input type="email" class="form-control" id="email" name="email" value="{{ patient.user.email }}" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="phone_no" class="form-label">Phone:</label>
-                            <input type="tel" class="form-control" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" value="{{ patient.user.phone_no }}" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="password" class="form-label">Password:</label>
-                            <input type="password" class="form-control" id="password" name="password">
-                            <small class="form-text text-body-secondary">Leave blank to keep current password. Use a strong password.</small>
+                            <label for="email" class="form-label fw-semibold small text-uppercase text-secondary">Email</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" value="{{ patient.user.email }}" required>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="dob" class="form-label">Date of Birth:</label>
-                            <input type="date" class="form-control" id="dob" name="dob" value="{{ patient.dob }}">
+                            <label for="phone_no" class="form-label fw-semibold small text-uppercase text-secondary">Phone</label>
+                            <input type="tel" class="form-control form-control-lg" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" value="{{ patient.user.phone_no }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="gender" class="form-label">Gender:</label>
-                            <select class="form-select" id="gender" name="gender" required>
+                            <label for="password" class="form-label fw-semibold small text-uppercase text-secondary">New Password</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Leave blank to keep current">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="dob" class="form-label fw-semibold small text-uppercase text-secondary">Date of Birth</label>
+                            <input type="date" class="form-control form-control-lg" id="dob" name="dob" value="{{ patient.dob }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label fw-semibold small text-uppercase text-secondary">Gender</label>
+                            <select class="form-select form-select-lg" id="gender" name="gender" required>
                                 <option value="">--Select--</option>
                                 <option value="male" {% if patient.gender == 'male' %}selected{% endif %}>Male</option>
                                 <option value="female" {% if patient.gender == 'female' %}selected{% endif %}>Female</option>
@@ -46,14 +51,13 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="address" class="form-label">Address:</label>
-                        <input type="text" class="form-control" id="address" name="address" value="{{ patient.address }}">
+                        <label for="address" class="form-label fw-semibold small text-uppercase text-secondary">Address</label>
+                        <input type="text" class="form-control form-control-lg" id="address" name="address" value="{{ patient.address }}">
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="blood_group" class="form-label">Blood Group:</label>
-                            <select class="form-select" id="blood_group" name="blood_group" required>
-                                <option value="">--Select--</option>
+                        <div class="col-md-6 mb-4">
+                            <label for="blood_group" class="form-label fw-semibold small text-uppercase text-secondary">Blood Group</label>
+                            <select class="form-select form-select-lg" id="blood_group" name="blood_group" required>
                                 <option value="A+" {% if patient.blood_group == 'A+' %}selected{% endif %}>A+</option>
                                 <option value="A-" {% if patient.blood_group == 'A-' %}selected{% endif %}>A-</option>
                                 <option value="B+" {% if patient.blood_group == 'B+' %}selected{% endif %}>B+</option>
@@ -64,21 +68,30 @@
                                 <option value="AB-" {% if patient.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="emergency_contact" class="form-label">Emergency Contact:</label>
-                            <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact" pattern="[0-9]{10}" value="{{ patient.emergency_contact }}">
+                        <div class="col-md-6 mb-4">
+                            <label for="emergency_contact" class="form-label fw-semibold small text-uppercase text-secondary">Emergency Contact</label>
+                            <input type="tel" class="form-control form-control-lg" id="emergency_contact" name="emergency_contact" pattern="[0-9]{10}" value="{{ patient.emergency_contact }}">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-person-check-fill"></i> Update Profile</button>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">
+                        Update Profile <i class="bi bi-check-lg ms-1"></i>
+                    </button>
                 </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ url_for('mediconnect_patient.dashboard') }}"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+                
+                <div class="text-center border-top pt-3 mt-3">
+                    <a href="{{ url_for('mediconnect_patient.dashboard') }}" class="text-decoration-none fw-semibold">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
                 </div>
-                <hr>
-                <form action="{{ url_for('mediconnect_patient.delete_account') }}" method="POST"
-                      onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');" class="text-center">
-                    <button type="submit" class="btn btn-danger"><i class="bi bi-trash3-fill"></i> Delete Account</button>
-                </form>
+                
+                <div class="mt-4 pt-3 border-top text-center">
+                    <form action="{{ url_for('mediconnect_patient.delete_account') }}" method="POST"
+                          onsubmit="return confirm('Are you sure you want to delete your account? This action cannot be undone.');">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash3-fill"></i> Delete Account
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

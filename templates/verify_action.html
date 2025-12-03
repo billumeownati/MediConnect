@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}MediConnect - Verify OTP{% endblock %}
+{% block title %}MediConnect - {{ title }}{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center align-items-center" style="min-height: 60vh;">
@@ -12,13 +12,13 @@
                         <i class="bi bi-shield-lock-fill" style="font-size: 2.5rem;"></i>
                     </div>
                 </div>
-
-                <h3 class="card-title text-center fw-bold mb-2">Verify One-Time Password</h3>
+                
+                <h3 class="card-title text-center fw-bold mb-2">{{ title }}</h3>
                 <p class="text-center text-secondary mb-4 small">
-                    A 6-digit verification code has been sent to your email address.
+                    Please enter the 6-digit OTP sent to your email to continue.
                 </p>
 
-                <form method="post">
+                <form method="post" action="{{ action_url }}">
                     <div class="mb-4">
                         <label for="otp" class="form-label fw-semibold small text-uppercase text-secondary">Verification Code</label>
                         <input type="tel" 
@@ -31,22 +31,18 @@
                                maxlength="6"
                                style="letter-spacing: 0.5rem; font-size: 1.5rem;"
                                autocomplete="one-time-code">
-                        <div class="form-text text-center mt-2 small text-muted">
-                            <i class="bi bi-clock me-1"></i> The code is valid for 10 minutes.
-                        </div>
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">
-                        Verify OTP <i class="bi bi-arrow-right-short"></i>
+                        Verify <i class="bi bi-arrow-right-short"></i>
                     </button>
-
-                    <div class="text-center border-top pt-3">
-                        <p class="small text-muted mb-0">
-                            Didn't receive the code? 
-                            <a href="{{ url_for('mediconnect.reset_password') }}" class="text-decoration-none fw-semibold">Resend Code</a>
-                        </p>
-                    </div>
                 </form>
+
+                <div class="text-center border-top pt-3">
+                    <p class="small text-muted mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Check your spam folder if you don't see the code.
+                    </p>
+                </div>
             </div>
         </div>
     </div>

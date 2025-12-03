@@ -102,3 +102,10 @@ class PasswordResetOTP(db.Model):
     otp = db.Column(db.String(6), nullable=False)
     expires_at = db.Column(db.DateTime, nullable=False)
 
+class VerificationOTP(db.Model):
+    __tablename__ = "verification_otp"
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(50), nullable=False) # Store email instead of ID
+    otp = db.Column(db.String(6), nullable=False)
+    purpose = db.Column(db.String(20), nullable=False) # 'admin_login', 'register', 'email_update'
+    expires_at = db.Column(db.DateTime, nullable=False)

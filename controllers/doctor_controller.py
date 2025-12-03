@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models import db, Doctor, Patient, User, Appointment, Slot, Treatment
+from models import db, Doctor, Patient, User, Appointment, Slot, Treatment, VerificationOTP
 from datetime import datetime, timedelta
 from sqlalchemy import or_
 from werkzeug.security import generate_password_hash
-from email_utils import send_appointment_status_email
+from email_utils import send_appointment_status_email, send_verification_email
+import random
 
 doctor_bp = Blueprint("mediconnect_doctor", __name__, url_prefix="/doctor")
 
@@ -92,25 +93,42 @@ def profile():
         return redirect(url_for("mediconnect_doctor.dashboard"))
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip()
+        # Get form data
+        new_email = request.form.get("email", "").strip()
         phone_no = request.form.get("phone_no", "").strip()
         password = request.form.get("password", "").strip()
         qualification = request.form.get("qualification", "").strip()
         experience_years = request.form.get("experience_years", "").strip()
 
-        if User.query.filter(User.email == email, User.user_id != user_id).first():
-            #preventing duplicate user email
-            flash("Email already exists.", "error")
-            return redirect(url_for("mediconnect_doctor.profile"))
+        # --- 1. Email Change Detection & Verification ---
+        if new_email != doctor.user.email:
+            # Check if new email is taken
+            if User.query.filter(User.email == new_email).first():
+                flash("Email already exists.", "error")
+                return redirect(url_for("mediconnect_doctor.profile"))
 
-        if email:
-            doctor.user.email = email
+            # Store all update data in session
+            session['doctor_update_data'] = request.form.to_dict()
+
+            # Generate and Send OTP
+            otp = str(random.randint(100000, 999999))
+            expiry = datetime.now() + timedelta(minutes=10)
+
+            # Cleanup old OTPs
+            VerificationOTP.query.filter_by(email=new_email, purpose='doc_email_update').delete()
+
+            new_otp = VerificationOTP(email=new_email, otp=otp, purpose='doc_email_update', expires_at=expiry)
+            db.session.add(new_otp)
+            db.session.commit()
+
+            send_verification_email(new_email, otp, "Email Change Verification")
+            return redirect(url_for('mediconnect_doctor.verify_email_update'))
+
+        # --- 2. Standard Update (No Email Change) ---
         if phone_no:
             doctor.user.phone_no = phone_no
         if password:
             doctor.user.password = generate_password_hash(password)
-
-
         if qualification:
             doctor.qualification = qualification
         if experience_years.isdigit():
@@ -121,6 +139,47 @@ def profile():
         return redirect(url_for("mediconnect_doctor.dashboard"))
 
     return render_template("doctor/profile.html", doctor=doctor)
+
+
+@doctor_bp.route("/verify-email-update", methods=["GET", "POST"])
+def verify_email_update():
+    user_id = session.get("user_id")
+    if not user_id or 'doctor_update_data' not in session:
+        return redirect(url_for("mediconnect_doctor.dashboard"))
+
+    doctor = Doctor.query.filter_by(user_id=user_id).first()
+    data = session['doctor_update_data']
+    new_email = data['email']
+
+    if request.method == 'POST':
+        otp_input = request.form.get('otp')
+        record = VerificationOTP.query.filter_by(email=new_email, purpose='doc_email_update').order_by(VerificationOTP.id.desc()).first()
+
+        if record and record.otp == otp_input and record.expires_at > datetime.now():
+            # --- Apply Updates ---
+            doctor.user.email = new_email
+            
+            if data.get('phone_no'):
+                doctor.user.phone_no = data['phone_no']
+            if data.get('password'):
+                doctor.user.password = generate_password_hash(data['password'])
+            if data.get('qualification'):
+                doctor.qualification = data['qualification']
+            if data.get('experience_years') and data['experience_years'].isdigit():
+                doctor.experience_years = int(data['experience_years'])
+
+            # Cleanup
+            VerificationOTP.query.filter_by(email=new_email, purpose='doc_email_update').delete()
+            db.session.commit()
+            session.pop('doctor_update_data', None)
+
+            flash("Profile and Email updated successfully.", "success")
+            return redirect(url_for("mediconnect_doctor.profile"))
+        else:
+            flash("Invalid or expired OTP", "error")
+
+    # Reuse the generic verify template
+    return render_template('verify_action.html', title="Verify Email Update", action_url=url_for('mediconnect_doctor.verify_email_update'))
 
 
 @doctor_bp.route("/update_appointment/<int:appointment_id>", methods=["POST"])

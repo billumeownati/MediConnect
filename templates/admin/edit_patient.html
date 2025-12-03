@@ -1,43 +1,47 @@
 {% extends "base.html" %}
-
 {% block title %}Edit Patient{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title text-center">Edit Patient</h2>
+<div class="row justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-gear" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+                <h3 class="card-title text-center fw-bold mb-4">Edit Patient</h3>
+
                 <form method="POST" action="{{ url_for('mediconnect_admin.edit_patient', patient_id=patient.patient_id) }}">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="full_name" class="form-label">Full Name:</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" value="{{ patient.user.full_name }}" required>
+                            <label for="full_name" class="form-label fw-semibold small text-uppercase text-secondary">Full Name</label>
+                            <input type="text" class="form-control form-control-lg" id="full_name" name="full_name" value="{{ patient.user.full_name }}" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email:</label>
-                            <input type="email" class="form-control" id="email" name="email" value="{{ patient.user.email }}" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="password" class="form-label">Password:</label>
-                            <input type="password" class="form-control" id="password" name="password">
-                            <small class="form-text text-body-secondary">Leave blank to keep current password. Use a strong password.</small>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="phone_no" class="form-label">Phone Number:</label>
-                            <input type="tel" class="form-control" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" value="{{ patient.user.phone_no }}" required>
+                            <label for="email" class="form-label fw-semibold small text-uppercase text-secondary">Email</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" value="{{ patient.user.email }}" required>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="dob" class="form-label">Date of Birth:</label>
-                            <input type="date" class="form-control" id="dob" name="dob" value="{{ patient.dob }}" required>
+                            <label for="password" class="form-label fw-semibold small text-uppercase text-secondary">New Password</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Leave blank to keep current">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="gender" class="form-label">Gender:</label>
-                            <select class="form-select" id="gender" name="gender">
+                            <label for="phone_no" class="form-label fw-semibold small text-uppercase text-secondary">Phone Number</label>
+                            <input type="tel" class="form-control form-control-lg" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" value="{{ patient.user.phone_no }}" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="dob" class="form-label fw-semibold small text-uppercase text-secondary">Date of Birth</label>
+                            <input type="date" class="form-control form-control-lg" id="dob" name="dob" value="{{ patient.dob }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label fw-semibold small text-uppercase text-secondary">Gender</label>
+                            <select class="form-select form-select-lg" id="gender" name="gender">
                                 <option value="male" {% if patient.gender == 'male' %}selected{% endif %}>Male</option>
                                 <option value="female" {% if patient.gender == 'female' %}selected{% endif %}>Female</option>
                                 <option value="other" {% if patient.gender == 'other' %}selected{% endif %}>Other</option>
@@ -45,23 +49,27 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="address" class="form-label">Address:</label>
-                        <textarea class="form-control" id="address" name="address">{{ patient.address }}</textarea>
+                        <label for="address" class="form-label fw-semibold small text-uppercase text-secondary">Address</label>
+                        <input type="text" class="form-control form-control-lg" id="address" name="address" value="{{ patient.address }}">
                     </div>
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="blood_group" class="form-label">Blood Group:</label>
-                            <input type="text" class="form-control" id="blood_group" name="blood_group" value="{{ patient.blood_group }}">
+                        <div class="col-md-6 mb-4">
+                            <label for="blood_group" class="form-label fw-semibold small text-uppercase text-secondary">Blood Group</label>
+                            <input type="text" class="form-control form-control-lg" id="blood_group" name="blood_group" value="{{ patient.blood_group }}">
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="emergency_contact" class="form-label">Emergency Contact:</label>
-                            <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact" pattern="[0-9]{10}" value="{{ patient.emergency_contact }}">
+                        <div class="col-md-6 mb-4">
+                            <label for="emergency_contact" class="form-label fw-semibold small text-uppercase text-secondary">Emergency Contact</label>
+                            <input type="tel" class="form-control form-control-lg" id="emergency_contact" name="emergency_contact" pattern="[0-9]{10}" value="{{ patient.emergency_contact }}">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Update Patient</button>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">
+                        Update Patient <i class="bi bi-save ms-1"></i>
+                    </button>
                 </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ url_for('mediconnect_admin.view_patients') }}"><i class="bi bi-arrow-left"></i> Back to Patients</a>
+                <div class="text-center border-top pt-3 mt-3">
+                    <a href="{{ url_for('mediconnect_admin.view_patients') }}" class="text-decoration-none fw-semibold">
+                        <i class="bi bi-arrow-left"></i> Back to Patients
+                    </a>
                 </div>
             </div>
         </div>

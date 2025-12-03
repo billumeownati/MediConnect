@@ -256,3 +256,28 @@ def send_appointment_status_email(patient_email, patient_name, doctor_name, date
     </html>
     """
     send_email(f"Appointment {status} - MediConnect", [patient_email], html_body)
+
+def send_verification_email(email, otp, purpose_text="verification"):
+    html_body = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>{get_common_style()}</head>
+    <body>
+        <div class="container">
+            <div class="header" style="background-color: #6610f2;">
+                <h1>Verification Required</h1>
+            </div>
+            <div class="content">
+                <p>Hello,</p>
+                <p>Please use the following One-Time Password (OTP) for <strong>{purpose_text}</strong>.</p>
+                <div class="info-box" style="text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #6610f2; border-color: #6610f2;">
+                    {otp}
+                </div>
+                <p>This code is valid for 10 minutes.</p>
+            </div>
+            <div class="footer">&copy; {datetime.now().year} MediConnect.</div>
+        </div>
+    </body>
+    </html>
+    """
+    send_email("MediConnect: Verification Code", [email], html_body)

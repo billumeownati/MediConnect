@@ -2,33 +2,41 @@
 {% block title %}Admin Profile{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title text-center"><i class="bi bi-person-circle"></i> My Profile</h2>
+<div class="row justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-workspace" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+                <h3 class="card-title text-center fw-bold mb-4">Admin Profile</h3>
+
                 <form method="POST">
-                    
                     <div class="mb-3">
-                        <label for="full_name" class="form-label">Full Name:</label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" value="Admin" readonly>
+                        <label for="full_name" class="form-label fw-semibold small text-uppercase text-secondary">Full Name</label>
+                        <input type="text" class="form-control form-control-lg" id="full_name" name="full_name" value="Admin" readonly>
                     </div>
 
                     <div class="mb-3">
-                        <label for="email" class="form-label">Email:</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{{ admin.email }}" required>
+                        <label for="email" class="form-label fw-semibold small text-uppercase text-secondary">Email</label>
+                        <input type="email" class="form-control form-control-lg" id="email" name="email" value="{{ admin.email }}" required>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="password" class="form-label">New Password:</label>
-                        <input type="password" class="form-control" id="password" name="password">
-                        <small class="form-text text-body-secondary">Leave blank to keep current password. Use a strong password.</small>
+                    <div class="mb-4">
+                        <label for="password" class="form-label fw-semibold small text-uppercase text-secondary">New Password</label>
+                        <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="Leave blank to keep current">
                     </div>
                     
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-person-check-fill"></i> Update Profile</button>
+                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">
+                        Update Profile <i class="bi bi-check-lg ms-1"></i>
+                    </button>
                 </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ url_for('mediconnect_admin.dashboard') }}"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+                <div class="text-center border-top pt-3 mt-3">
+                    <a href="{{ url_for('mediconnect_admin.dashboard') }}" class="text-decoration-none fw-semibold">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
                 </div>
             </div>
         </div>

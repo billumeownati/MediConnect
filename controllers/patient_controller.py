@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, request, session, redirect, url_for, flash
-from models import db, Patient, Appointment, Department, Slot, Doctor, Treatment, User
+from models import db, Patient, Appointment, Department, Slot, Doctor, Treatment, User, VerificationOTP
 from sqlalchemy import or_
-from datetime import datetime
+from datetime import datetime, timedelta
+import random
 from werkzeug.security import generate_password_hash
-from email_utils import send_appointment_booking_email, send_appointment_cancellation_email, send_appointment_reschedule_email
+from email_utils import send_appointment_booking_email, send_appointment_cancellation_email, send_appointment_reschedule_email, send_verification_email
 
 patient_bp = Blueprint("mediconnect_patient", __name__, url_prefix="/patient")
 
@@ -103,7 +104,27 @@ def profile():
         if full_name:
             patient.user.full_name = full_name
         if email:
-            patient.user.email = email
+            new_email = request.form.get("email").strip()
+            current_email = patient.user.email
+            
+            if new_email != current_email:
+                if User.query.filter(User.email == new_email).first():
+                    flash("Email already exists.", "error")
+                    return redirect(url_for("mediconnect_patient.profile"))
+                
+                # Store update data in session
+                session['profile_update_data'] = request.form.to_dict()
+                
+                # Send OTP to NEW email
+                otp = str(random.randint(100000, 999999))
+                expiry = datetime.now() + timedelta(minutes=10)
+                
+                new_otp = VerificationOTP(email=new_email, otp=otp, purpose='email_update', expires_at=expiry)
+                db.session.add(new_otp)
+                db.session.commit()
+                
+                send_verification_email(new_email, otp, "Email Change Verification")
+                return redirect(url_for('mediconnect_patient.verify_email_update'))
         if phone_no:
             patient.user.phone_no = phone_no
         if password:
@@ -132,6 +153,40 @@ def profile():
         return redirect(url_for("mediconnect_patient.dashboard"))
 
     return render_template("patient/profile.html", patient=patient)
+
+
+@patient_bp.route('/verify-email-update', methods=['GET', 'POST'])
+def verify_email_update():
+    user_id = session.get("user_id")
+    if not user_id or 'profile_update_data' not in session:
+        return redirect(url_for('mediconnect_patient.dashboard'))
+        
+    data = session['profile_update_data']
+    new_email = data['email']
+    
+    if request.method == 'POST':
+        otp_input = request.form.get('otp')
+        record = VerificationOTP.query.filter_by(email=new_email, purpose='email_update').order_by(VerificationOTP.id.desc()).first()
+        
+        if record and record.otp == otp_input and record.expires_at > datetime.now():
+            patient = Patient.query.filter_by(user_id=user_id).first()
+            patient.user.email = new_email
+            patient.user.full_name = data['full_name']
+            patient.user.phone_no = data['phone_no']
+            if data['password']:
+                 patient.user.password = generate_password_hash(data['password'])
+            
+            patient.address = data['address']
+            
+            VerificationOTP.query.filter_by(email=new_email, purpose='email_update').delete()
+            db.session.commit()
+            session.pop('profile_update_data', None)
+            flash("Profile and Email updated successfully.", "success")
+            return redirect(url_for('mediconnect_patient.profile'))
+        else:
+            flash("Invalid OTP", "error")
+            
+    return render_template('verify_action.html', title="Verify Email Update", action_url=url_for('mediconnect_patient.verify_email_update'))
 
 
 @patient_bp.route("/book-appointment", methods=["GET", "POST"])

@@ -1,31 +1,43 @@
 {% extends "base.html" %}
-
 {% block title %}Treatment - {{ appointment.patient.user.full_name }}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title text-center">Treatment for {{ appointment.patient.user.full_name }}</h2>
-                <p class="text-center">Appointment: {{ appointment.slot.date }} at {{ appointment.slot.time }}</p>
+<div class="row justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-clipboard2-pulse-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+                <h3 class="card-title text-center fw-bold mb-2">Patient Treatment</h3>
+                <p class="text-center text-secondary mb-4">
+                    {{ appointment.patient.user.full_name }} <br>
+                    <small>{{ appointment.slot.date }} at {{ appointment.slot.time }}</small>
+                </p>
+
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="diagnosis" class="form-label">Diagnosis:</label>
-                        <textarea class="form-control" id="diagnosis" name="diagnosis" rows="5">{{ appointment.treatment.diagnosis if appointment.treatment else '' }}</textarea>
+                        <label for="diagnosis" class="form-label fw-semibold small text-uppercase text-secondary">Diagnosis</label>
+                        <textarea class="form-control form-control-lg" id="diagnosis" name="diagnosis" rows="4">{{ appointment.treatment.diagnosis if appointment.treatment else '' }}</textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="prescription" class="form-label">Prescription:</label>
-                        <textarea class="form-control" id="prescription" name="prescription" rows="5">{{ appointment.treatment.prescription if appointment.treatment else '' }}</textarea>
+                        <label for="prescription" class="form-label fw-semibold small text-uppercase text-secondary">Prescription</label>
+                        <textarea class="form-control form-control-lg" id="prescription" name="prescription" rows="4">{{ appointment.treatment.prescription if appointment.treatment else '' }}</textarea>
                     </div>
-                    <div class="mb-3">
-                        <label for="notes" class="form-label">Notes:</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3">{{ appointment.treatment.notes if appointment.treatment else '' }}</textarea>
+                    <div class="mb-4">
+                        <label for="notes" class="form-label fw-semibold small text-uppercase text-secondary">Notes</label>
+                        <textarea class="form-control form-control-lg" id="notes" name="notes" rows="3">{{ appointment.treatment.notes if appointment.treatment else '' }}</textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-clipboard2-pulse-fill"></i> Save Treatment</button>
+                    <button type="submit" class="btn btn-success w-100 btn-lg mb-3 shadow-sm">
+                        Save Treatment <i class="bi bi-check-circle ms-1"></i>
+                    </button>
                 </form>
-                <div class="mt-3 text-center">
-                    <a href="{{ url_for('mediconnect_doctor.dashboard') }}"><i class="bi bi-arrow-left"></i> Back to Dashboard</a>
+                <div class="text-center border-top pt-3 mt-3">
+                    <a href="{{ url_for('mediconnect_doctor.dashboard') }}" class="text-decoration-none fw-semibold">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
                 </div>
             </div>
         </div>

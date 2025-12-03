@@ -3,57 +3,68 @@
 {% block title %}MediConnect - Patient Registration{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h3 class="card-title text-center">Patient Registration</h3>
+<div class="row justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="col-md-10 col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4">
+            <div class="card-body p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                        <i class="bi bi-person-plus-fill" style="font-size: 2.5rem;"></i>
+                    </div>
+                </div>
+
+                <h3 class="card-title text-center fw-bold mb-4">Patient Registration</h3>
+
                 <form method="post">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="full_name" class="form-label">Full Name</label>
-                            <input type="text" class="form-control" id="full_name" name="full_name" required>
+                            <label for="full_name" class="form-label fw-semibold small text-uppercase text-secondary">Full Name</label>
+                            <input type="text" class="form-control form-control-lg" id="full_name" name="full_name" required placeholder="John Doe">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="phone_no" class="form-label">Phone No</label>
-                            <input type="tel" class="form-control" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" required placeholder="Enter a 10-digit number">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
-                            <small class="form-text text-body-secondary">Use a strong password.</small>
+                            <label for="email" class="form-label fw-semibold small text-uppercase text-secondary">Email</label>
+                            <input type="email" class="form-control form-control-lg" id="email" name="email" required placeholder="name@example.com">
                         </div>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="dob" class="form-label">Date of Birth</label>
-                            <input type="date" class="form-control" id="dob" name="dob" required>
+                            <label for="phone_no" class="form-label fw-semibold small text-uppercase text-secondary">Phone No</label>
+                            <input type="tel" class="form-control form-control-lg" id="phone_no" name="phone_no" pattern="[0-9]{10}" maxlength="10" required placeholder="10-digit number">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="gender" class="form-label">Gender</label>
-                            <select class="form-select" name="gender" id="gender" required>
-                                <option value="">--Select--</option>
+                            <label for="password" class="form-label fw-semibold small text-uppercase text-secondary">Password</label>
+                            <input type="password" class="form-control form-control-lg" id="password" name="password" required placeholder="••••••••">
+                            <div class="form-text small">Use a strong password.</div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="dob" class="form-label fw-semibold small text-uppercase text-secondary">Date of Birth</label>
+                            <input type="date" class="form-control form-control-lg" id="dob" name="dob" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label fw-semibold small text-uppercase text-secondary">Gender</label>
+                            <select class="form-select form-select-lg" name="gender" id="gender" required>
+                                <option value="">-- Select --</option>
                                 <option value="male">Male</option>
                                 <option value="female">Female</option>
                                 <option value="other">Other</option>
                             </select>
                         </div>
                     </div>
+
                     <div class="mb-3">
-                        <label for="address" class="form-label">Address</label>
-                        <input type="text" class="form-control" id="address" name="address" required>
+                        <label for="address" class="form-label fw-semibold small text-uppercase text-secondary">Address</label>
+                        <input type="text" class="form-control form-control-lg" id="address" name="address" required placeholder="123 Main St, City">
                     </div>
+
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="blood_group" class="form-label">Blood Group</label>
-                            <select class="form-select" name="blood_group" id="blood_group" required>
-                                <option value="">--Select--</option>
+                        <div class="col-md-6 mb-4">
+                            <label for="blood_group" class="form-label fw-semibold small text-uppercase text-secondary">Blood Group</label>
+                            <select class="form-select form-select-lg" name="blood_group" id="blood_group" required>
+                                <option value="">-- Select --</option>
                                 <option value="A+">A+</option>
                                 <option value="A-">A-</option>
                                 <option value="B+">B+</option>
@@ -64,14 +75,23 @@
                                 <option value="AB-">AB-</option>
                             </select>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="emergency_contact" class="form-label">Emergency Contact</label>
-                            <input type="tel" class="form-control" id="emergency_contact" name="emergency_contact" pattern="[0-9]{10}" maxlength="10" required placeholder="Enter a 10-digit number">
+                        <div class="col-md-6 mb-4">
+                            <label for="emergency_contact" class="form-label fw-semibold small text-uppercase text-secondary">Emergency Contact</label>
+                            <input type="tel" class="form-control form-control-lg" id="emergency_contact" name="emergency_contact" pattern="[0-9]{10}" maxlength="10" required placeholder="10-digit number">
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Register</button>
+
+                    <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">
+                        Register <i class="bi bi-person-plus-fill ms-1"></i>
+                    </button>
                 </form>
-                <p class="mt-3 text-center">Already registered? <a href="{{ url_for('mediconnect.login') }}">Login here</a></p>
+
+                <div class="text-center border-top pt-3 mt-3">
+                    <p class="small text-muted mb-0">
+                        Already registered? 
+                        <a href="{{ url_for('mediconnect.login') }}" class="text-decoration-none fw-semibold">Login here</a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>

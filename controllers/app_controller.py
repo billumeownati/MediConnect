@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from models import db, Admin, User, Patient, Doctor, Department, PasswordResetOTP
+from models import db, Admin, User, Patient, Doctor, Department, PasswordResetOTP, VerificationOTP
 from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
-from email_utils import send_welcome_email, send_otp_email
+from email_utils import send_welcome_email, send_otp_email, send_verification_email
 
 app_bp = Blueprint("mediconnect", __name__)
 
@@ -38,44 +38,45 @@ def home():
 @app_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        full_name = request.form['full_name']
         email = request.form['email']
-        password = request.form['password']
-        phone_no = request.form['phone_no']
         dob = request.form['dob']
-        gender = request.form['gender']
-        address = request.form['address']
-        blood_group = request.form['blood_group']
-        emergency_contact = request.form['emergency_contact']
-        
+
+        try:
+            dob_date = datetime.strptime(dob, "%Y-%m-%d").date()
+            today = datetime.now().date()
+            # Calculate 125 years ago correctly handling leap years
+            min_date = today.replace(year=today.year - 125)
+            
+            if dob_date > today:
+                flash("Date of Birth cannot be in the future.", "error")
+                return redirect(url_for("mediconnect.register"))
+            if dob_date < min_date:
+                flash("Date of Birth is invalid (over 125 years ago).", "error")
+                return redirect(url_for("mediconnect.register"))
+        except ValueError:
+            flash("Invalid Date format.", "error")
+            return redirect(url_for("mediconnect.register"))
+
         if User.query.filter_by(email=email).first():
             flash("Email already exists.", "error")
             return redirect(url_for("mediconnect.register"))
 
-        new_user = User(
-            full_name=full_name,
-            email=email,
-            password=generate_password_hash(password),
-            role='patient',
-            phone_no=phone_no,
-            status='active'
-        )
-        db.session.add(new_user)
+        # Store ALL form data (full_name, password, etc.) in session temporarily
+        session['reg_data'] = request.form.to_dict()
+        
+        # Generate OTP
+        otp = str(random.randint(100000, 999999))
+        expiry = datetime.now() + timedelta(minutes=10)
+        
+        # Clean old OTPs for this email if any
+        VerificationOTP.query.filter_by(email=email, purpose='register').delete()
+        
+        new_otp = VerificationOTP(email=email, otp=otp, purpose='register', expires_at=expiry)
+        db.session.add(new_otp)
         db.session.commit()
-
-        patient = Patient(
-            user_id=new_user.user_id,
-            dob=datetime.strptime(dob, "%Y-%m-%d").date(),
-            gender=gender,
-            address=address,
-            blood_group=blood_group,
-            emergency_contact=emergency_contact
-        )
-        db.session.add(patient)
-        db.session.commit()
-        send_welcome_email(full_name, email)
-
-        return redirect(url_for('mediconnect.login'))
+        
+        send_verification_email(email, otp, "Patient Registration")
+        return redirect(url_for('mediconnect.verify_registration'))
 
     return render_template('register.html')
 
@@ -88,8 +89,21 @@ def login():
 
         admin = Admin.query.filter_by(email=email).first()
         if admin and check_password_hash(admin.password, password):
-            session["admin_id"] = admin.admin_id
-            return redirect(url_for('mediconnect_admin.dashboard'))
+            # 2FA Logic for Admin
+            otp = str(random.randint(100000, 999999))
+            expiry = datetime.now() + timedelta(minutes=10)
+
+            # Clear old OTPs
+            VerificationOTP.query.filter_by(email=email, purpose='admin_login').delete()
+
+            new_otp = VerificationOTP(email=email, otp=otp, purpose='admin_login', expires_at=expiry)
+            db.session.add(new_otp)
+            db.session.commit()
+            
+            send_verification_email(email, otp, "Admin Login")
+            session['temp_admin_id'] = admin.admin_id # Temporary session
+            flash("Admin credentials verified. Please enter OTP.", "info")
+            return redirect(url_for('mediconnect.verify_admin_login'))
 
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password, password):
@@ -109,6 +123,95 @@ def login():
             return redirect(url_for("mediconnect_patient.dashboard"))
     
     return render_template('login.html')
+
+
+@app_bp.route('/verify-admin', methods=['GET', 'POST'])
+def verify_admin_login():
+    if 'temp_admin_id' not in session:
+        return redirect(url_for('mediconnect.login'))
+        
+    if request.method == 'POST':
+        otp_input = request.form.get('otp')
+        
+        # Add safety check if admin ID in session is invalid
+        admin = Admin.query.get(session['temp_admin_id'])
+        if not admin:
+            session.pop('temp_admin_id', None)
+            flash("Session Error. Please login again.", "error")
+            return redirect(url_for('mediconnect.login'))
+
+        record = VerificationOTP.query.filter_by(email=admin.email, purpose='admin_login').order_by(VerificationOTP.id.desc()).first()
+        
+        if record and record.otp == otp_input and record.expires_at > datetime.now():
+            # Success
+            session.pop('temp_admin_id', None)
+            session["admin_id"] = admin.admin_id
+            
+            # Cleanup
+            VerificationOTP.query.filter_by(email=admin.email, purpose='admin_login').delete()
+            db.session.commit()
+            
+            return redirect(url_for('mediconnect_admin.dashboard'))
+        else:
+            flash("Invalid or expired OTP", "error")
+            
+    return render_template('verify_action.html', title="Admin 2FA", action_url=url_for('mediconnect.verify_admin_login'))
+
+
+@app_bp.route('/verify-registration', methods=['GET', 'POST'])
+def verify_registration():
+    if 'reg_data' not in session:
+        return redirect(url_for('mediconnect.register'))
+    
+    email = session['reg_data']['email']
+    
+    if request.method == 'POST':
+        otp_input = request.form.get('otp')
+        record = VerificationOTP.query.filter_by(email=email, purpose='register').order_by(VerificationOTP.id.desc()).first()
+        
+        if record and record.otp == otp_input and record.expires_at > datetime.now():
+            # Success - Create User Now
+            data = session['reg_data']
+            
+            try:
+                new_user = User(
+                    full_name=data['full_name'],
+                    email=data['email'],
+                    password=generate_password_hash(data['password']),
+                    role='patient',
+                    phone_no=data['phone_no'],
+                    status='active'
+                )
+                db.session.add(new_user)
+                db.session.commit()
+
+                patient = Patient(
+                    user_id=new_user.user_id,
+                    dob=datetime.strptime(data['dob'], "%Y-%m-%d").date(),
+                    gender=data['gender'],
+                    address=data['address'],
+                    blood_group=data['blood_group'],
+                    emergency_contact=data['emergency_contact']
+                )
+                db.session.add(patient)
+                
+                # Cleanup
+                VerificationOTP.query.filter_by(email=email, purpose='register').delete()
+                db.session.commit()
+                
+                session.pop('reg_data', None)
+                send_welcome_email(data['full_name'], data['email'])
+                flash("Registration successful! Please login.", "success")
+                return redirect(url_for('mediconnect.login'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash("An error occurred during account creation.", "error")
+                return redirect(url_for('mediconnect.register'))
+        else:
+            flash("Invalid or expired OTP", "error")
+
+    return render_template('verify_action.html', title="Verify Registration", action_url=url_for('mediconnect.verify_registration'))
 
 
 @app_bp.route("/reset-password", methods=["GET", "POST"])
