@@ -73,7 +73,11 @@
               <a class="nav-link fw-semibold" href="{{ url_for('mediconnect.register') }}">Register</a>
             </li>
           {% endif %}
-        </ul>
+          <li class="nav-item me-3" id="pwa-install-item">
+             <a class="nav-link fw-bold text-primary" href="https://mediconnect.debz.in/?mode=install">
+                <i class="bi bi-download"></i> Install App
+             </a>
+          </li>
       </div>
     </div>
   </nav>
@@ -157,6 +161,14 @@
         window.addEventListener("pageshow", function(event) {
             hideLoader();
         });
+
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isStandalone) {
+            const installBtn = document.getElementById('pwa-install-item');
+            if (installBtn) {
+                installBtn.style.display = 'none';
+            }
+        }
     });
   </script>
 </body>
