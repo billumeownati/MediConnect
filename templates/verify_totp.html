@@ -27,11 +27,19 @@
                     <button type="submit" class="btn btn-primary w-100 btn-lg mb-3 shadow-sm">Verify</button>
                 </form>
 
-                {% if is_admin %}
+                {% if has_totp_secret %}
                 <div class="text-center border-top pt-3">
+                    {% if is_admin %}
                     <p class="small text-muted mb-0">
-                        Lost access? <a href="{{ url_for('mediconnect.switch_to_email_otp') }}" class="text-decoration-none fw-semibold">Verify via Email</a>
+                        Lost access? 
+                        <a href="{{ url_for('mediconnect.switch_to_email_otp') }}" class="text-decoration-none fw-semibold">Verify via Email (Admin)</a>
                     </p>
+                    {% else %}
+                    <p class="small text-muted mb-0">
+                        Lost access? 
+                        <a href="{{ url_for('mediconnect.switch_to_user_email_otp') }}" class="text-decoration-none fw-semibold">Verify via Email Fallback</a>
+                    </p>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>

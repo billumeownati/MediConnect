@@ -197,8 +197,10 @@ def verify_totp_login():
         else:
             flash("Invalid 2FA Code.", "error")
 
-    # If Admin, show link to switch to Email OTP
-    return render_template('verify_totp.html', is_admin=is_admin)
+    # Pass flags to template to control fallback link visibility
+    return render_template('verify_totp.html', 
+                           is_admin=is_admin, 
+                           has_totp_secret=bool(user_obj.totp_secret))
 
 
 @app_bp.route('/switch-to-email-otp')
@@ -220,6 +222,75 @@ def switch_to_email_otp():
     send_verification_email(admin.email, otp, "Admin Login (Fallback)")
     flash("OTP sent to email. Please verify.", "info")
     return redirect(url_for('mediconnect.verify_admin_login'))
+
+
+@app_bp.route('/switch-to-user-email-otp')
+def switch_to_user_email_otp():
+    # User (Patient/Doctor) Fallback
+    user_id = session.get('temp_user_id')
+    if not user_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for('mediconnect.login'))
+        
+    user = User.query.get(user_id)
+    if not user or not user.totp_secret:
+        return redirect(url_for('mediconnect.login'))
+    
+    # Generate Email OTP for User Fallback
+    otp = str(random.randint(100000, 999999))
+    expiry = datetime.now() + timedelta(minutes=10)
+    purpose = 'user_totp_fallback'
+    
+    VerificationOTP.query.filter_by(email=user.email, purpose=purpose).delete()
+    
+    new_otp = VerificationOTP(email=user.email, purpose=purpose, otp=otp, expires_at=expiry)
+    db.session.add(new_otp)
+    db.session.commit()
+    
+    send_verification_email(user.email, otp, "2FA Fallback Verification")
+    flash("OTP sent to your registered email. Please verify.", "info")
+    
+    return redirect(url_for('mediconnect.verify_user_fallback_otp'))
+
+
+@app_bp.route('/verify-user-fallback-otp', methods=['GET', 'POST'])
+def verify_user_fallback_otp():
+    user_id = session.get('temp_user_id')
+    if not user_id:
+        flash("Session expired. Please log in again.", "error")
+        return redirect(url_for('mediconnect.login'))
+    
+    user = User.query.get(user_id)
+    if not user:
+        return redirect(url_for('mediconnect.login'))
+
+    if request.method == 'POST':
+        otp_input = request.form.get('otp')
+        purpose = 'user_totp_fallback'
+        
+        record = VerificationOTP.query.filter_by(email=user.email, purpose=purpose).order_by(VerificationOTP.id.desc()).first()
+        
+        if record and record.otp == otp_input and record.expires_at > datetime.now():
+            # Success! Finalize Login
+            VerificationOTP.query.filter_by(email=user.email, purpose=purpose).delete()
+            db.session.commit()
+            
+            session.pop('temp_user_id', None)
+            session["user_id"] = user.user_id
+            session["role"] = user.role
+
+            flash("Login successful via Email Fallback.", "success")
+            
+            if user.role == "doctor":
+                return redirect(url_for("mediconnect_doctor.dashboard"))
+            return redirect(url_for("mediconnect_patient.dashboard"))
+        else:
+            flash("Invalid or expired OTP.", "error")
+
+    # Reuse generic verify template
+    return render_template('verify_action.html', 
+                           title="2FA Email Fallback", 
+                           action_url=url_for('mediconnect.verify_user_fallback_otp'))
 
 
 @app_bp.route('/setup-2fa', methods=['GET', 'POST'])
@@ -260,7 +331,6 @@ def setup_2fa():
     secret = session['temp_totp_secret']
     totp = pyotp.TOTP(secret)
     # Create QR Link (using Google Auth format)
-    # format: otpauth://totp/MediConnect:user@email.com?secret=SECRET&issuer=MediConnect
     uri = totp.provisioning_uri(name=user.email, issuer_name="MediConnect")
     
     # Generate QR Code Image
