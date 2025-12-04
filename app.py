@@ -19,6 +19,14 @@ def create_app():
         "pool_recycle": 300,
     }
 
+    # Ensure cookies are only sent over HTTPS
+    app.config['SESSION_COOKIE_SECURE'] = True
+    # Prevent client-side JavaScript from accessing the cookie (prevents XSS theft)
+    app.config['SESSION_COOKIE_HTTPONLY'] = True
+    # Restrict cookie sending to same-site requests (mitigates CSRF)
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    # ----------------------------------
+
     db.init_app(app)
 
     app.config['MAIL_SERVER'] = os.getenv("SMTP_SERVER")

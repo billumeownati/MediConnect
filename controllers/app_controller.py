@@ -41,22 +41,25 @@ def home():
     )
 
 def is_mx_record_valid(email):
-    """
-    Checks if the email address has the correct format and its domain has valid MX records.
-    """
-    # 1. Basic Syntax Check
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return False
 
     try:
         domain = email.split('@')[1]
-        
-        # 2. MX Record Lookup
         answers = dns.resolver.resolve(domain, 'MX')
+        
+        # Check for Null MX record (priority 0 and exchange '.')
+        for rdata in answers:
+            exchange = rdata.exchange.to_text().rstrip('.')
+            preference = rdata.preference
+            
+            # If we find a Null MX record, the domain does not accept email
+            if preference == 0 and not exchange:
+                return False
+
         return len(answers) > 0
         
     except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, Exception):
-        # Domain exists but has no MX records, or domain doesn't exist
         return False
 
 @app_bp.route('/register', methods=['GET', 'POST'])
