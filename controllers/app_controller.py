@@ -6,6 +6,10 @@ import random
 from email_utils import send_welcome_email, send_otp_email, send_verification_email
 import dns.resolver
 import re
+import pyotp
+import qrcode
+import io
+import base64
 
 app_bp = Blueprint("mediconnect", __name__)
 
@@ -112,24 +116,29 @@ def login():
         email = request.form['email']
         password = request.form['password']
 
+        # 1. Check Admin Login
         admin = Admin.query.filter_by(email=email).first()
         if admin and check_password_hash(admin.password, password):
-            # 2FA Logic for Admin
+            session['temp_admin_id'] = admin.admin_id
+            
+            # CASE A: Admin has TOTP enabled
+            if admin.totp_secret:
+                return redirect(url_for('mediconnect.verify_totp_login'))
+            
+            # CASE B: Admin uses default Email OTP
             otp = str(random.randint(100000, 999999))
             expiry = datetime.now() + timedelta(minutes=10)
-
-            # Clear old OTPs
             VerificationOTP.query.filter_by(email=email, purpose='admin_login').delete()
-
+            
             new_otp = VerificationOTP(email=email, otp=otp, purpose='admin_login', expires_at=expiry)
             db.session.add(new_otp)
             db.session.commit()
             
             send_verification_email(email, otp, "Admin Login")
-            session['temp_admin_id'] = admin.admin_id # Temporary session
             flash("Admin credentials verified. Please enter OTP.", "info")
             return redirect(url_for('mediconnect.verify_admin_login'))
 
+        # 2. Check User Login
         user = User.query.filter_by(email=email).first()
         if not user or not check_password_hash(user.password, password):
             flash("Invalid email or password", "danger")
@@ -139,6 +148,12 @@ def login():
             flash("Your account has been deactivated. Please contact admin.", "danger")
             return render_template("login.html")
 
+        # CASE C: User has TOTP enabled
+        if user.totp_secret:
+            session['temp_user_id'] = user.user_id
+            return redirect(url_for('mediconnect.verify_totp_login'))
+
+        # CASE D: User Standard Login
         session["user_id"] = user.user_id
         session["role"] = user.role
 
@@ -148,6 +163,133 @@ def login():
             return redirect(url_for("mediconnect_patient.dashboard"))
     
     return render_template('login.html')
+
+
+@app_bp.route('/verify-totp', methods=['GET', 'POST'])
+def verify_totp_login():
+    # Determine who is trying to login
+    if 'temp_admin_id' in session:
+        user_obj = Admin.query.get(session['temp_admin_id'])
+        is_admin = True
+    elif 'temp_user_id' in session:
+        user_obj = User.query.get(session['temp_user_id'])
+        is_admin = False
+    else:
+        return redirect(url_for('mediconnect.login'))
+
+    if request.method == 'POST':
+        otp = request.form.get('otp')
+        totp = pyotp.TOTP(user_obj.totp_secret)
+        
+        if totp.verify(otp):
+            # Success!
+            if is_admin:
+                session.pop('temp_admin_id', None)
+                session["admin_id"] = user_obj.admin_id
+                return redirect(url_for('mediconnect_admin.dashboard'))
+            else:
+                session.pop('temp_user_id', None)
+                session["user_id"] = user_obj.user_id
+                session["role"] = user_obj.role
+                if user_obj.role == "doctor":
+                    return redirect(url_for("mediconnect_doctor.dashboard"))
+                return redirect(url_for("mediconnect_patient.dashboard"))
+        else:
+            flash("Invalid 2FA Code.", "error")
+
+    # If Admin, show link to switch to Email OTP
+    return render_template('verify_totp.html', is_admin=is_admin)
+
+
+@app_bp.route('/switch-to-email-otp')
+def switch_to_email_otp():
+    if 'temp_admin_id' not in session:
+        return redirect(url_for('mediconnect.login'))
+        
+    admin = Admin.query.get(session['temp_admin_id'])
+    
+    # Generate Email OTP logic (same as standard admin login)
+    otp = str(random.randint(100000, 999999))
+    expiry = datetime.now() + timedelta(minutes=10)
+    VerificationOTP.query.filter_by(email=admin.email, purpose='admin_login').delete()
+    
+    new_otp = VerificationOTP(email=admin.email, purpose='admin_login', otp=otp, expires_at=expiry)
+    db.session.add(new_otp)
+    db.session.commit()
+    
+    send_verification_email(admin.email, otp, "Admin Login (Fallback)")
+    flash("OTP sent to email. Please verify.", "info")
+    return redirect(url_for('mediconnect.verify_admin_login'))
+
+
+@app_bp.route('/setup-2fa', methods=['GET', 'POST'])
+def setup_2fa():
+    # Identify current logged in user
+    if 'admin_id' in session:
+        user = Admin.query.get(session['admin_id'])
+    elif 'user_id' in session:
+        user = User.query.get(session['user_id'])
+    else:
+        return redirect(url_for('mediconnect.login'))
+
+    if request.method == 'POST':
+        # Verify the code from the new secret
+        secret = session.get('temp_totp_secret')
+        otp = request.form.get('otp')
+        
+        totp = pyotp.TOTP(secret)
+        if totp.verify(otp):
+            user.totp_secret = secret
+            db.session.commit()
+            session.pop('temp_totp_secret', None)
+            flash("Two-Factor Authentication enabled successfully!", "success")
+            
+            if 'admin_id' in session:
+                return redirect(url_for('mediconnect_admin.profile'))
+            elif user.role == 'doctor':
+                return redirect(url_for('mediconnect_doctor.profile'))
+            else:
+                return redirect(url_for('mediconnect_patient.profile'))
+        else:
+            flash("Invalid code. Please try again.", "error")
+
+    # Generate Secret & QR
+    if 'temp_totp_secret' not in session:
+        session['temp_totp_secret'] = pyotp.random_base32()
+    
+    secret = session['temp_totp_secret']
+    totp = pyotp.TOTP(secret)
+    # Create QR Link (using Google Auth format)
+    # format: otpauth://totp/MediConnect:user@email.com?secret=SECRET&issuer=MediConnect
+    uri = totp.provisioning_uri(name=user.email, issuer_name="MediConnect")
+    
+    # Generate QR Code Image
+    img = qrcode.make(uri)
+    buffered = io.BytesIO()
+    img.save(buffered)
+    img_str = base64.b64encode(buffered.getvalue()).decode('utf-8')
+
+    return render_template('setup_2fa.html', qr_code=img_str, secret=secret)
+
+
+@app_bp.route('/disable-2fa', methods=['POST'])
+def disable_2fa():
+    if 'admin_id' in session:
+        user = Admin.query.get(session['admin_id'])
+        back_url = url_for('mediconnect_admin.profile')
+    elif 'user_id' in session:
+        user = User.query.get(session['user_id'])
+        if user.role == 'doctor':
+            back_url = url_for('mediconnect_doctor.profile')
+        else:
+            back_url = url_for('mediconnect_patient.profile')
+    else:
+        return redirect(url_for('mediconnect.login'))
+
+    user.totp_secret = None
+    db.session.commit()
+    flash("Two-Factor Authentication disabled.", "success")
+    return redirect(back_url)
 
 
 @app_bp.route('/verify-admin', methods=['GET', 'POST'])

@@ -10,6 +10,7 @@ class Admin(db.Model):
     admin_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     email = db.Column(db.String(50), nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    totp_secret = db.Column(db.String(32))
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -20,6 +21,7 @@ class User(db.Model):
     role = db.Column(db.String(10), nullable=False)
     phone_no = db.Column(db.String(10), nullable=False)
     status = db.Column(db.String(20), nullable=False, default='active')
+    totp_secret = db.Column(db.String(32))
 
     doctor = db.relationship('Doctor', back_populates='user', uselist=False, cascade='all, delete-orphan')
     patient = db.relationship('Patient', back_populates='user', uselist=False, cascade='all, delete-orphan')
